@@ -16,12 +16,7 @@ contract StrategyFactory {
     /// @notice Track the deployments. asset => pool => strategy
     mapping(address => address) public deployments;
 
-    constructor(
-        address _management,
-        address _performanceFeeRecipient,
-        address _keeper,
-        address _emergencyAdmin
-    ) {
+    constructor(address _management, address _performanceFeeRecipient, address _keeper, address _emergencyAdmin) {
         management = _management;
         performanceFeeRecipient = _performanceFeeRecipient;
         keeper = _keeper;
@@ -35,12 +30,14 @@ contract StrategyFactory {
      */
     function newStrategy(
         address _asset,
-        string calldata _name
+        string calldata _name,
+        address _aavePool,
+        address _compoundToken,
+        address _aaveRewardsController
     ) external virtual returns (address) {
         // tokenized strategies available setters.
-        IStrategyInterface _newStrategy = IStrategyInterface(
-            address(new Strategy(_asset, _name))
-        );
+        IStrategyInterface _newStrategy =
+            IStrategyInterface(address(new Strategy(_asset, _aavePool, _compoundToken, _aaveRewardsController, _name)));
 
         _newStrategy.setPerformanceFeeRecipient(performanceFeeRecipient);
 
@@ -56,20 +53,14 @@ contract StrategyFactory {
         return address(_newStrategy);
     }
 
-    function setAddresses(
-        address _management,
-        address _performanceFeeRecipient,
-        address _keeper
-    ) external {
+    function setAddresses(address _management, address _performanceFeeRecipient, address _keeper) external {
         require(msg.sender == management, "!management");
         management = _management;
         performanceFeeRecipient = _performanceFeeRecipient;
         keeper = _keeper;
     }
 
-    function isDeployedStrategy(
-        address _strategy
-    ) external view returns (bool) {
+    function isDeployedStrategy(address _strategy) external view returns (bool) {
         address _asset = IStrategyInterface(_strategy).asset();
         return deployments[_asset] == _strategy;
     }

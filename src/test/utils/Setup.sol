@@ -23,6 +23,9 @@ contract Setup is ExtendedTest, IEvents {
     // Contract instances that we will use repeatedly.
     ERC20 public asset;
     IStrategyInterface public strategy;
+    address public aavePool;
+    address public aaveRewardsController;
+    address public compoundToken;
 
     StrategyFactory public strategyFactory;
 
@@ -58,12 +61,11 @@ contract Setup is ExtendedTest, IEvents {
         // Set decimals
         decimals = asset.decimals();
 
-        strategyFactory = new StrategyFactory(
-            management,
-            performanceFeeRecipient,
-            keeper,
-            emergencyAdmin
-        );
+        // Set Aave and Compound addresses
+        aavePool = tokenAddrs["AAVE_POOL"];
+        compoundToken = tokenAddrs["COMPOUND_TOKEN"];
+
+        strategyFactory = new StrategyFactory(management, performanceFeeRecipient, keeper, emergencyAdmin);
 
         // Deploy strategy and set variables
         strategy = IStrategyInterface(setUpStrategy());
@@ -85,7 +87,10 @@ contract Setup is ExtendedTest, IEvents {
             address(
                 strategyFactory.newStrategy(
                     address(asset),
-                    "Tokenized Strategy"
+                    "Tokenized Strategy",
+                    address(aavePool),
+                    address(compoundToken),
+                    address(aaveRewardsController)
                 )
             )
         );
@@ -96,11 +101,7 @@ contract Setup is ExtendedTest, IEvents {
         return address(_strategy);
     }
 
-    function depositIntoStrategy(
-        IStrategyInterface _strategy,
-        address _user,
-        uint256 _amount
-    ) public {
+    function depositIntoStrategy(IStrategyInterface _strategy, address _user, uint256 _amount) public {
         vm.prank(_user);
         asset.approve(address(_strategy), _amount);
 
@@ -108,11 +109,7 @@ contract Setup is ExtendedTest, IEvents {
         _strategy.deposit(_amount, _user);
     }
 
-    function mintAndDepositIntoStrategy(
-        IStrategyInterface _strategy,
-        address _user,
-        uint256 _amount
-    ) public {
+    function mintAndDepositIntoStrategy(IStrategyInterface _strategy, address _user, uint256 _amount) public {
         airdrop(asset, _user, _amount);
         depositIntoStrategy(_strategy, _user, _amount);
     }
@@ -125,9 +122,7 @@ contract Setup is ExtendedTest, IEvents {
         uint256 _totalIdle
     ) public {
         uint256 _assets = _strategy.totalAssets();
-        uint256 _balance = ERC20(_strategy.asset()).balanceOf(
-            address(_strategy)
-        );
+        uint256 _balance = ERC20(_strategy.asset()).balanceOf(address(_strategy));
         uint256 _idle = _balance > _assets ? _assets : _balance;
         uint256 _debt = _assets - _idle;
         assertEq(_assets, _totalAssets, "!totalAssets");
@@ -163,5 +158,8 @@ contract Setup is ExtendedTest, IEvents {
         tokenAddrs["USDT"] = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
         tokenAddrs["DAI"] = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
         tokenAddrs["USDC"] = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        tokenAddrs["AAVE_POOL"] = 0x7d2768de32B0B80B7a3454C06BDAc94A568E126E;
+        tokenAddrs["COMPOUND_TOKEN"] = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
+        tokenAddrs["AAVE_REWARDS_CONTROLLER"] = 0x7d2768de32B0B80B7a3454C06BDAc94A568E126E;
     }
 }

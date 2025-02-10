@@ -15,3 +15,9 @@
 [submodule "lib/aave-v3-origin"]
 	path = lib/aave-v3-origin
 	url = https://github.com/aave-dao/aave-v3-origin
+[submodule "lib/compound-protocol"]
+	path = lib/compound-protocol
+	url = https://github.com/compound-finance/compound-protocol
+[submodule "lib/chainlink-brownie-contracts"]
+	path = lib/chainlink-brownie-contracts
+	url = https://github.com/smartcontractkit/chainlink-brownie-contracts
