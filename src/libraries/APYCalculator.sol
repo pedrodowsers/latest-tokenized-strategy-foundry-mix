@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import {IPool} from "lib/aave-v3-origin/src/contracts/interfaces/IPool.sol";
 import {DataTypes} from "lib/aave-v3-origin/src/contracts/protocol/libraries/types/DataTypes.sol";
 import {CTokenInterface} from "@compound-protocol/contracts/CTokenInterfaces.sol";
-import {CErc20Interface} from "@compound-protocol/contracts/CTokenInterfaces.sol";
+// import {CErc20Interface} from "@compound-protocol/contracts/CTokenInterfaces.sol";
 
 library APYCalculator {
     uint256 private constant BLOCKS_PER_YEAR = 2_628_000; // ~365 * 24 * 60 * 60 / 12
