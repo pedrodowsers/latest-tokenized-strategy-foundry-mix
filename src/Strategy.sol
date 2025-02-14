@@ -10,7 +10,8 @@ import {CToken} from "@compound-protocol/contracts/CToken.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {UniswapV2Swapper} from "@periphery/swappers/UniswapV2Swapper.sol";
-import {KeeperCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/interfaces/KeeperCompatibleInterface.sol";
+import {KeeperCompatibleInterface} from
+    "@chainlink/contracts/src/v0.8/automation/interfaces/KeeperCompatibleInterface.sol";
 import {APYCalculator} from "./libraries/APYCalculator.sol";
 
 // Import interfaces for many popular DeFi projects, or add your own!
@@ -135,7 +136,7 @@ contract Strategy is BaseStrategy, UniswapV2Swapper, KeeperCompatibleInterface {
         if (totalBalance == 0) return;
 
         // Calculate the amount to withdraw from Aave and Compound
-        
+
         // @audit-bug Voir si on laisse ce bug, pour voir si les tests sont bien faits car on retire dans les deux pools
         //au lieu d'une seule car on dépose dans une seule pool.
         uint256 aaveWithdrawAmount = _amount * totalCollateralBase / totalBalance;
