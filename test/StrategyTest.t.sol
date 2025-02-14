@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 import "forge-std/StdStorage.sol";
 import {MockToken} from "./mocks/MockToken.sol";
 
@@ -35,14 +35,29 @@ contract StrategyTest is TestnetProcedures {
     // First flight strategy setup //
     Strategy public strategy;
 
+    // Strategy name
+    string public constant STRATEGY_NAME = "TestStrategy";
+
     function setUp() public {
         // Aave setup //
         initTestEnvironment();
         pool = PoolInstance(report.poolProxy);
-        
+
+        // Get token from aavePool test environment
+
         // Token for compound supplyRatePerBlock function test
         TokenSupplyRatePerBlock = new MockToken("TokenSupplyRatePerBlock", "TSRPB", 18, 1e18);
-        // Strategy TestStrategy = new Strategy(_asset, _aavePool, _compoundToken, _aaveRewardsController, _name);
+        // Strategy TestStrategy = new Strategy(_asset, _aavePool, _compoundToken, _aaveRewardsController, STRATEGY_NAME);
+    }
+
+    function testDeployContracts() public view {
+        // check if the setup works fine (deploying contracts)
+        uint256 wbtcAliceBalance = IERC20(tokenList.wbtc).balanceOf(alice);
+        DataTypes.ReserveDataLegacy memory reserveData = pool.getReserveData(tokenList.wbtc);
+        uint256 liquidityRate = reserveData.currentLiquidityRate;
+        console.log("liquidtyrate", liquidityRate);
+        console.log("Alice's balance of WBTC: ", wbtcAliceBalance);
+        assert(true);
     }
 
     function testCalculateAaveAPY() public {}
