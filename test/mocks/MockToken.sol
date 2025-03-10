@@ -15,7 +15,6 @@ contract MockToken is ERC20 {
         return _decimals;
     }
 
-    // Optional: Add mint function for testing
     function mint(address to, uint256 amount) public {
         _mint(to, amount);
     }
