@@ -52,6 +52,8 @@ contract StrategyTest is TestnetProcedures {
     Strategy public strategy;
     // Strategy name
     string public constant STRATEGY_NAME = "TestStrategy";
+    // Common Token from Aave and Compound
+    // MockToken public commonToken;
 
     // Constants
     uint256 constant INITIAL_SUPPLY = 1000000e18;
@@ -62,6 +64,10 @@ contract StrategyTest is TestnetProcedures {
     IRewardsController public rewardsController;
 
     function setUp() public {
+        // Common token for Aave and Compound
+        // commonToken = new MockToken("Common Token", "CTK", 18, INITIAL_SUPPLY);
+        commonToken = new TestnetERC20('Common Token', 'CTK', 18, address(this));
+
         //1. Aave setup //
         initTestEnvironment();
         pool = PoolInstance(report.poolProxy);

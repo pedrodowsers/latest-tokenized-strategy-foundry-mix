@@ -29,38 +29,35 @@ library APYCalculator {
         DataTypes.ReserveDataLegacy memory reserveData = aavePool.getReserveData(asset);
         // Get the current liquidity rate from the struct type Expressed in ray (1e27) eg; si taux à 5% => 5e27 (0.05*1e27)
         uint256 liquidityRate = reserveData.currentLiquidityRate;
-        console2.log("----------------------------------------------------------------------------");
-        console2.log("Raw liquidityRate", liquidityRate);
-        console2.log("----------------------------------------------------------------------------");
+        // console2.log("----------------------------------------------------------------------------");
+        // console2.log("Raw liquidityRate", liquidityRate);
+        // console2.log("----------------------------------------------------------------------------");
         // Convert rate from ray (1e27) to a more manageable precision (1e18)
         // If rate is 5%, liquidityRate would be 0.05 * 1e27, so we divide by 1e9 to get 0.05 * 1e18
         uint256 ratePerYear = liquidityRate / 1e9;
 
-        console2.log("----------------------------------------------------------------------------");
-        console2.log("Rate Per Year", ratePerYear);
-        console2.log("----------------------------------------------------------------------------");
+        // console2.log("----------------------------------------------------------------------------");
+        // console2.log("Rate Per Year", ratePerYear);
+        // console2.log("----------------------------------------------------------------------------");
         return ratePerYear;
     }
 
-    
-function calculateCompoundAPY(CTokenInterface cToken) internal view returns (uint256) {
-    // Get the current supply rate per block from Compound
-    uint256 supplyRatePerBlock = cToken.supplyRatePerBlock();
-    console2.log("----------------------------------------------------------------------------");
-    console2.log("Raw supplyRatePerBlock", supplyRatePerBlock);
-    console2.log("----------------------------------------------------------------------------");
+    function calculateCompoundAPY(CTokenInterface cToken) internal view returns (uint256) {
+        // Get the current supply rate per block from Compound
+        uint256 supplyRatePerBlock = cToken.supplyRatePerBlock();
+        console2.log("----------------------------------------------------------------------------");
+        console2.log("Raw supplyRatePerBlock from compound", supplyRatePerBlock);
+        console2.log("----------------------------------------------------------------------------");
 
-    // Calculate APY using the formula: (1 + ratePerBlock)^blocksPerYear - 1
-    // We use 1e18 for precision
-    uint256 annualRate = supplyRatePerBlock * BLOCKS_PER_YEAR;
-    console2.log("----------------------------------------------------------------------------");
-    console2.log("Annual Rate", annualRate);
-    console2.log("----------------------------------------------------------------------------");
-    // Convert to percentage (multiply by 100)
-    return annualRate  / 1e18;
-}
-
-
+        // Calculate APY using the formula: (1 + ratePerBlock)^blocksPerYear - 1
+        // We use 1e18 for precision
+        uint256 annualRate = (supplyRatePerBlock * 1e19) * BLOCKS_PER_YEAR;
+        console2.log("----------------------------------------------------------------------------");
+        console2.log("Annual Rate from compound", annualRate);
+        console2.log("----------------------------------------------------------------------------");
+        // Convert to percentage (multiply by 100)
+        return annualRate / 1e18;
+    }
 
     // Helper function to calculate exponentiation with precision
     function exponentialWithPrecision(uint256 base, uint256 exponent, uint256 precision)
