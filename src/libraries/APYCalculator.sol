@@ -45,16 +45,16 @@ library APYCalculator {
     function calculateCompoundAPY(CTokenInterface cToken) internal view returns (uint256) {
         // Get the current supply rate per block from Compound
         uint256 supplyRatePerBlock = cToken.supplyRatePerBlock();
-        console2.log("----------------------------------------------------------------------------");
-        console2.log("Raw supplyRatePerBlock from compound", supplyRatePerBlock);
-        console2.log("----------------------------------------------------------------------------");
+        // console2.log("----------------------------------------------------------------------------");
+        // console2.log("Raw supplyRatePerBlock from compound", supplyRatePerBlock);
+        // console2.log("----------------------------------------------------------------------------");
 
         // Calculate APY using the formula: (1 + ratePerBlock)^blocksPerYear - 1
         // We use 1e18 for precision
         uint256 annualRate = (supplyRatePerBlock * 1e19) * BLOCKS_PER_YEAR;
-        console2.log("----------------------------------------------------------------------------");
-        console2.log("Annual Rate from compound", annualRate);
-        console2.log("----------------------------------------------------------------------------");
+        // console2.log("----------------------------------------------------------------------------");
+        // console2.log("Annual Rate from compound", annualRate);
+        // console2.log("----------------------------------------------------------------------------");
         // Convert to percentage (multiply by 100)
         return annualRate / 1e18;
     }

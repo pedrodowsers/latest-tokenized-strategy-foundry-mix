@@ -66,7 +66,7 @@ contract StrategyTest is TestnetProcedures {
     function setUp() public {
         // Common token for Aave and Compound
         // commonToken = new MockToken("Common Token", "CTK", 18, INITIAL_SUPPLY);
-        commonToken = new TestnetERC20('Common Token', 'CTK', 18, address(this));
+        commonToken = new TestnetERC20("Common Token", "CTK", 18, address(this));
 
         //1. Aave setup //
         initTestEnvironment();
