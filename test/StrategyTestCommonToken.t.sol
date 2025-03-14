@@ -72,7 +72,6 @@ contract StrategyTest is TestnetProcedures {
 
     function setUp() public {
         // Common token for Aave and Compound
-        // commonToken = new MockToken("Common Token", "CTK", 18, INITIAL_SUPPLY);
         commonToken = new TestnetERC20("Common Token", "CTK", 18, address(this));
         //1. Aave setup //
         initTestEnvironment();
@@ -142,6 +141,35 @@ contract StrategyTest is TestnetProcedures {
         strategy = Strategy(strategyAddress);
     }
 
+    modifier marketSetup() {
+        uint256 supplyAmount = 2000e18;
+        uint256 borrowAmount = 800e18; // 40% of supply
+
+        vm.startPrank(poolAdmin);
+        commonToken.mint(carol, supplyAmount);
+        commonToken.mint(address(this), supplyAmount);
+        vm.stopPrank();
+
+        // Setup for Compound borrowing
+        address[] memory markets = new address[](1);
+        markets[0] = address(cToken);
+        comptroller.enterMarkets(markets);
+
+        // Approve and supply to Compound
+        commonToken.approve(address(cToken), supplyAmount);
+        cToken.mint(supplyAmount);
+
+        cToken.borrow(borrowAmount);
+
+        // Supply and borrow in Aave
+        vm.startPrank(carol);
+        commonToken.approve(address(pool), supplyAmount);
+        pool.supply(address(commonToken), supplyAmount, carol, 0);
+        pool.borrow(address(commonToken), borrowAmount, 2, 0, carol);
+        vm.stopPrank();
+        _;
+    }
+
     function testTokenSetup() public {
         // Test common token basic setup
         console2.log("Common Token address:", address(commonToken));
@@ -154,28 +182,6 @@ contract StrategyTest is TestnetProcedures {
         // Test Compound setup for common token
         console2.log("cToken address:", address(cToken));
         console2.log("Common Token underlying in cToken:", cToken.underlying());
-    }
-
-    function testSupplyToProtocols() public {
-        uint256 supplyAmount = 1000e18;
-
-        // Supply to Aave
-        vm.startPrank(carol);
-        commonToken.approve(address(pool), supplyAmount);
-        pool.supply(address(commonToken), supplyAmount, carol, 0);
-        vm.stopPrank();
-
-        // Supply to Compound
-        commonToken.approve(address(cToken), supplyAmount);
-        cToken.mint(supplyAmount);
-
-        // Get supply balances
-        (address aToken,,) = contracts.protocolDataProvider.getReserveTokensAddresses(address(commonToken));
-        uint256 aaveBalance = IERC20(aToken).balanceOf(carol);
-        uint256 compoundBalance = cToken.balanceOf(address(this));
-
-        console2.log("Aave supply balance:", aaveBalance);
-        console2.log("Compound supply balance:", compoundBalance);
     }
 
     function testCompareAPYs() public {
@@ -251,38 +257,7 @@ contract StrategyTest is TestnetProcedures {
         strategy.deployFundsForVault(strategyAmount);
     }
 
-    function testDeployFundsWithAPY() public {
-        uint256 supplyAmount = 2000e18;
-        uint256 borrowAmount = 800e18; // 40% of supply
-
-        vm.startPrank(poolAdmin);
-        commonToken.mint(carol, supplyAmount);
-        commonToken.mint(address(this), supplyAmount);
-        vm.stopPrank();
-
-        // Setup for Compound borrowing
-        address[] memory markets = new address[](1);
-        markets[0] = address(cToken);
-        comptroller.enterMarkets(markets);
-
-        // Approve and supply to Compound
-        commonToken.approve(address(cToken), supplyAmount);
-        cToken.mint(supplyAmount);
-
-        uint256 balanceBeforeBorrow = commonToken.balanceOf(address(this));
-        console2.log("Balance before Compound borrow: ", balanceBeforeBorrow);
-
-        cToken.borrow(borrowAmount);
-
-        uint256 balanceAfterBorrow = commonToken.balanceOf(address(this));
-        console2.log("Balance after Compound borrow: ", balanceAfterBorrow);
-
-        // Supply and borrow in Aave
-        vm.startPrank(carol);
-        commonToken.approve(address(pool), supplyAmount);
-        pool.supply(address(commonToken), supplyAmount, carol, 0);
-        pool.borrow(address(commonToken), borrowAmount, 2, 0, carol);
-        vm.stopPrank();
+    function testDeployFundsWithAPY() public marketSetup {
 
         // Now test strategy's _deployFunds
         uint256 strategyAmount = 1000e18;
@@ -321,6 +296,8 @@ contract StrategyTest is TestnetProcedures {
         // Get final APYs
         uint256 aaveAPY = APYCalculator.calculateAaveAPY(contracts.poolProxy, address(commonToken));
         uint256 compoundAPY = APYCalculator.calculateCompoundAPY(cToken);
+        console2.log("Aave APY:", aaveAPY);
+        console2.log("Compound APY:", compoundAPY);
 
         // 1. Verify all funds were deployed (no tokens left in strategy)
         assertEq(finalTokenBalance, 0, "Strategy should have deployed all tokens");
@@ -344,11 +321,84 @@ contract StrategyTest is TestnetProcedures {
         assertEq(totalValueDeployed, strategyAmount, "Total deployed value should match initial amount");
     }
 
-    function testFreeFunds() public {}
+    function testFreeFunds() public marketSetup{
+        // Mint tokens to strategy
+        uint256 strategyAmount = 1000e18;
+        vm.startPrank(poolAdmin);
+        commonToken.mint(address(strategy), strategyAmount);
+        vm.stopPrank();
+
+        // Deploy funds through strategy
+        vm.prank(address(management));
+        strategy.deployFundsForVault(strategyAmount);
+
+        // Store initial balances
+        uint256 initialTokenBalance = commonToken.balanceOf(address(strategy));
+        uint256 initialAaveBalance = IERC20(aCommonToken).balanceOf(address(strategy));
+        uint256 initialCompoundBalance = cToken.balanceOf(address(strategy));
+
+        // Free funds
+        vm.prank(address(management));
+        strategy.freeFundsFromVault(strategyAmount);
+
+        // Get final balances
+        uint256 finalTokenBalance = commonToken.balanceOf(address(strategy));
+        uint256 finalAaveBalance = IERC20(aCommonToken).balanceOf(address(strategy));
+        uint256 finalCompoundBalance = cToken.balanceOf(address(strategy));
+
+        // Check final strategy balances
+        console2.log("\nStrategy final balances:");
+        console2.log("Token balance:", commonToken.balanceOf(address(strategy)));
+        console2.log("Aave supply:", IERC20(aCommonToken).balanceOf(address(strategy)));
+        console2.log("Compound supply:", cToken.balanceOf(address(strategy)));
+
+        // 1. Verify all funds were freed (no tokens left in strategy)
+        assertEq(finalTokenBalance, 0, "Strategy should have freed all tokens");
+        // 2. Verify funds were freed from the protocol with higher APY
+        if (initialAaveBalance > initialCompoundBalance) {
+            assertGt(initialAaveBalance, finalAaveBalance, "Funds should have been freed from Aave");
+            assertEq(initialAaveBalance - finalAaveBalance, strategyAmount, "All funds should be freed from Aave");
+            assertEq(finalCompoundBalance, initialCompoundBalance, "No funds should have gone from Compound");
+        } else {
+            assertGt(initialCompoundBalance, finalCompoundBalance, "Funds should have been freed from Compound");
+            assertEq(
+                initialCompoundBalance - finalCompoundBalance,
+                strategyAmount,
+                "All funds should be freed from Compound"
+            );
+            assertEq(finalAaveBalance, initialAaveBalance, "No funds should have gone from Aave");
+        }
+        // 3. Verify total value freed matches initial amount
+        uint256 totalValueFreed =
+            (initialAaveBalance - finalAaveBalance) + (initialCompoundBalance - finalCompoundBalance);
+        assertEq(totalValueFreed, strategyAmount, "Total freed value should match initial amount");
+
+
+    }
 
     function testHarvestAndReport() public {}
 
     function testClaimAndSellRewards() public {}
 
-    function testGetAPY() public {}
+    function testGetAPY() public marketSetup {
+
+        // Get final APYs
+        uint256 aaveAPY = APYCalculator.calculateAaveAPY(contracts.poolProxy, address(commonToken));
+        uint256 compoundAPY = APYCalculator.calculateCompoundAPY(cToken);
+        console2.log("Aave APY:", aaveAPY);
+        console2.log("Compound APY:", compoundAPY);
+    }
+
+    function testCurrentAPYDifference() public marketSetup {
+        // Get final APYs
+        uint256 aaveAPY = APYCalculator.calculateAaveAPY(contracts.poolProxy, address(commonToken));
+        uint256 compoundAPY = APYCalculator.calculateCompoundAPY(cToken);
+        console2.log("Aave APY:", aaveAPY);
+        console2.log("Compound APY:", compoundAPY);
+
+        // Get APY difference
+        (uint256 difference, bool needsRebalance) = strategy.currentAPYDifference();
+        console2.log("difference:", difference);
+        console2.log("needsRebalance:", needsRebalance);
+    }
 }

@@ -351,6 +351,10 @@ contract Strategy is BaseStrategy, UniswapV2Swapper, KeeperCompatibleInterface {
         _deployFunds(amount);
     }
 
+    function freeFundsFromVault(uint256 amount) public {
+        _freeFunds(amount);
+    }
+
     /*//////////////////////////////////////////////////////////////
                     OPTIONAL TO OVERRIDE BY STRATEGIST
     //////////////////////////////////////////////////////////////*/
